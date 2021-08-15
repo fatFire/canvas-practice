@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+    <canvas id="CandlestickChart" width="1280" height="720"></canvas>
+    <script src="./CandlestickChart.js"></script>
+    <script>
+      function getData() {
+        var xmlhttp = new XMLHttpRequest()
+        xmlhttp.open(
+          "GET",
+          "https://api.binance.com/api/v3/klines?symbol=BTCEUR&interval=1d&limit=50"
+        )
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var json = JSON.parse(xmlhttp.responseText)
+            candlestickChart = new CandlestickChart("CandlestickChart")
+            for (var i = 0; i < json.length; ++i) {
+              console.log(json[i][4])
+              candlestickChart.addCandlestick(
+                new Candlestick(
+                  json[i][0],
+                  json[i][1],
+                  json[i][4],
+                  json[i][2],
+                  json[i][3]
+                )
+              )
+            }
+            candlestickChart.draw()
+          }
+        }
+        xmlhttp.setRequestHeader(
+          "Content-Type",
+          "application/x-www-form-urlencoded"
+        )
+        xmlhttp.send()
+      }
+      getData()
+    </script>
+</body>
+</html>
