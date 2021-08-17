@@ -8,9 +8,20 @@ function Candlestick(timestamp, open, close, high, low) {
 
 function CandlestickChart(canvasElementID) {
   this.canvas = document.getElementById(canvasElementID)
+  this.context = this.canvas.getContext("2d")
+  
+  const dRP = window.devicePixelRatio
+
+  // 高分屏适配
+  this.canvas.style.width = this.canvas.width + 'px'
+  this.canvas.style.height = this.canvas.height + 'px'
+  this.canvas.width = this.canvas.width * dRP
+  this.canvas.height = this.canvas.height * dRP
+  this.context.scale(dRP, dRP)
+
   this.width = parseInt(this.canvas.width)
   this.height = parseInt(this.canvas.height)
-  this.context = this.canvas.getContext("2d")
+  
 
   this.canvas.addEventListener("mousemove", (e) => {
     this.mouseMove(e)
