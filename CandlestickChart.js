@@ -68,28 +68,17 @@ function CandlestickChart(canvasElementID) {
 }
 
 CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
-  // 获取 canvas 的 backingStorePixelRatio 值
-  const backingStore =
-    context.backingStorePixelRatio ||
-    context.webkitBackingStorePixelRatio ||
-    context.mozBackingStorePixelRatio ||
-    context.msBackingStorePixelRatio ||
-    context.oBackingStorePixelRatio ||
-    context.backingStorePixelRatio ||
-    1
-  // 若 devicePixelRatio 不存在，默认为 1
-  const ratio = (window.devicePixelRatio || 1) / backingStore
-  // 获取 canvas 的原始大小
-  const oldWidth = canvas.width
-  const oldHeight = canvas.height
-  // 按照比例放大 canvas
-  canvas.width = oldWidth * ratio
-  canvas.height = oldHeight * ratio
-  // 用 css 将 canvas 再调整成原来大小
-  canvas.style.width = oldWidth + "px"
-  canvas.style.height = oldHeight + "px"
-  // 按照比率把 context 再缩放回来
-  context.scale(ratio, ratio)
+  const dpr = window.devicePixelRatio || 1
+  const rect = canvas.getBoundingClientRect()
+
+  canvas.width = rect.width * dpr
+  canvas.height = rect.height * dpr
+  
+  canvas.style.width = rect.width + 'px'
+  canvas.style.height = rect.height + 'px'
+
+  context.scale(dpr, dpr)
+  
 }
 
 CandlestickChart.prototype.addCandlestick = function (candlestick) {
