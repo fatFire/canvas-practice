@@ -9,19 +9,10 @@ function Candlestick(timestamp, open, close, high, low) {
 function CandlestickChart(canvasElementID) {
   this.canvas = document.getElementById(canvasElementID)
   this.context = this.canvas.getContext("2d")
-  
-  const dRP = window.devicePixelRatio
-
-  // 高分屏适配
-  this.canvas.style.width = this.canvas.width + 'px'
-  this.canvas.style.height = this.canvas.height + 'px'
-  this.canvas.width = this.canvas.width * dRP
-  this.canvas.height = this.canvas.height * dRP
-  this.context.scale(dRP, dRP)
+  this.adjustHidpi(this.canvas, this.context)
 
   this.width = parseInt(this.canvas.width)
   this.height = parseInt(this.canvas.height)
-  
 
   this.canvas.addEventListener("mousemove", (e) => {
     this.mouseMove(e)
@@ -74,6 +65,31 @@ function CandlestickChart(canvasElementID) {
   this.hoveredCandlestickID = 0
 
   this.candlesticks = []
+}
+
+CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
+  // 获取 canvas 的 backingStorePixelRatio 值
+  const backingStore =
+    context.backingStorePixelRatio ||
+    context.webkitBackingStorePixelRatio ||
+    context.mozBackingStorePixelRatio ||
+    context.msBackingStorePixelRatio ||
+    context.oBackingStorePixelRatio ||
+    context.backingStorePixelRatio ||
+    1
+  // 若 devicePixelRatio 不存在，默认为 1
+  const ratio = (window.devicePixelRatio || 1) / backingStore
+  // 获取 canvas 的原始大小
+  const oldWidth = canvas.width
+  const oldHeight = canvas.height
+  // 按照比例放大 canvas
+  canvas.width = oldWidth * ratio
+  canvas.height = oldHeight * ratio
+  // 用 css 将 canvas 再调整成原来大小
+  canvas.style.width = oldWidth + "px"
+  canvas.style.height = oldHeight + "px"
+  // 按照比率把 context 再缩放回来
+  context.scale(ratio, ratio)
 }
 
 CandlestickChart.prototype.addCandlestick = function (candlestick) {
