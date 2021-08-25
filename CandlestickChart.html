@@ -738,7 +738,6 @@
             var json = JSON.parse(xmlhttp.responseText)
             candlestickChart = new CandlestickChart("CandlestickChart")
             for (var i = 0; i < json.length; ++i) {
-              console.log(json[i][4])
               candlestickChart.addCandlestick(
                 new Candlestick(
                   json[i][0],
