@@ -20,6 +20,14 @@ function CandlestickChart(canvasElementID) {
   this.canvas.addEventListener("mouseout", (e) => {
     this.mouseOut(e)
   })
+  this.canvas.addEventListener("mousedown", (e) => {
+    this.mouseDown(e)
+  })
+  this.canvas.addEventListener("mouseup", (e) => {
+    if (this.mousedown) {
+      this.mouseUp(e)
+    }
+  })
 
   this.canvas.style.backgroundColor = "#252525"
   this.context.font = "12px sans-serif"
@@ -35,10 +43,10 @@ function CandlestickChart(canvasElementID) {
   this.context.lineWidth = 1
   this.candleWidth = 5
 
-  this.marginLeft = 10
+  this.marginLeft = 30
   this.marginRight = 100
-  this.marginTop = 10
-  this.marginBottom = 30
+  this.marginTop = 30
+  this.marginBottom = 50
 
   this.yValueStart = 0
   this.yValueEnd = 0
@@ -50,12 +58,21 @@ function CandlestickChart(canvasElementID) {
   this.xValueRange = 0
   this.xPixelRange = this.width - this.marginLeft - this.marginRight
 
+  this.cachedCandlesticks = []
+  this.candlesticks = []
+
   // 预设值，实际会重新计算
   this.xGridCells = 16
   this.yGridCells = 16
 
   // 鼠标是否在蜡烛图上
   this.drawMouseOverlay = false
+  // 鼠标按下的起始位置
+  this.mouseDownPosition = { x: 0, y: 0 }
+  this.mousedown = false
+  // candlesticks 数组的起始下标
+  this.startIndex = 50
+  this.counts = 0
   // 鼠标的像素值
   this.mousePosition = { x: 0, y: 0 }
   // 鼠标对应的某个蜡烛的时间值
@@ -63,8 +80,6 @@ function CandlestickChart(canvasElementID) {
   // 鼠标对应的某个蜡烛的价格值
   this.yMouseHover = 0
   this.hoveredCandlestickID = 0
-
-  this.candlesticks = []
 }
 
 CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
@@ -73,19 +88,93 @@ CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
 
   canvas.width = rect.width * dpr
   canvas.height = rect.height * dpr
-  
-  canvas.style.width = rect.width + 'px'
-  canvas.style.height = rect.height + 'px'
+
+  canvas.style.width = rect.width + "px"
+  canvas.style.height = rect.height + "px"
 
   context.scale(dpr, dpr)
-  
 }
 
 CandlestickChart.prototype.addCandlestick = function (candlestick) {
-  this.candlesticks.push(candlestick)
+  this.cachedCandlesticks.push(candlestick)
+}
+
+CandlestickChart.prototype.setCandlesticks = function (
+  start = this.startIndex,
+  len = 50
+) {
+  if (start < 0 || start + len > this.cachedCandlesticks.length) {
+    return
+  }
+  this.candlesticks = this.cachedCandlesticks.slice(start, start + len)
+}
+
+CandlestickChart.prototype.mouseDown = function (e) {
+  this.mousedown = true
+  this.mouseDownPosition = this.getMousePos(e)
+}
+
+CandlestickChart.prototype.getMousePos = function (e) {
+  const rect = this.canvas.getBoundingClientRect()
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+}
+
+CandlestickChart.prototype.mouseUp = function (e) {
+  this.mousedown = false
+  if (this.mousePosition.x - this.mouseDownPosition.x > 0) {
+    this.startIndex = this.startIndex - this.counts
+    if (this.startIndex < 50) {
+      getData(this.cachedCandlesticks[0].timestamp - 86400000).then((res) => {
+        this.cachedCandlesticks = res.concat(this.cachedCandlesticks)
+        this.startIndex = this.startIndex + 100
+      })
+    }
+  } else {
+    this.startIndex = this.startIndex + this.counts
+  }
 }
 
 CandlestickChart.prototype.mouseMove = function (e) {
+  if (!this.mousedown) {
+    this.drawAuxiliaryLine(e)
+  } else {
+    this.drawMouseOverlay = false
+    this.updateCandlesticks(e)
+  }
+}
+
+CandlestickChart.prototype.updateCandlesticks = function (e) {
+  this.mousePosition = this.getMousePos(e)
+
+  // 判断鼠标是否越界
+  if (
+    this.mousePosition.x < this.marginLeft ||
+    this.mousePosition.x > this.width - this.marginRight + this.candleWidth ||
+    this.mousePosition.y > this.height - this.marginBottom ||
+    this.mousePosition.y < this.marginTop
+  ) {
+    this.mouseUp(e)
+    return
+  }
+
+  let mouseMoveLength = this.mousePosition.x - this.mouseDownPosition.x
+  if (mouseMoveLength > 0) {
+    if (mouseMoveLength >= this.candleWidth) {
+      this.counts = Math.floor(mouseMoveLength / this.candleWidth)
+      this.setCandlesticks(this.startIndex - this.counts, 50)
+      this.draw()
+    }
+  } else {
+    mouseMoveLength = Math.abs(mouseMoveLength)
+    if (mouseMoveLength >= this.candleWidth) {
+      this.counts = Math.floor(mouseMoveLength / this.candleWidth)
+      this.setCandlesticks(this.startIndex + this.counts, 50)
+      this.draw()
+    }
+  }
+}
+
+CandlestickChart.prototype.drawAuxiliaryLine = function (e) {
   // 获取当前鼠标在canvas中的位置
   const getMousePos = (e) => {
     const rect = this.canvas.getBoundingClientRect()
@@ -104,6 +193,7 @@ CandlestickChart.prototype.mouseMove = function (e) {
     this.drawMouseOverlay = false
   if (this.mousePosition.y > this.height - this.marginBottom)
     this.drawMouseOverlay = false
+  if (this.mousePosition.y < this.marginTop) this.drawMouseOverlay = false
 
   // 获取当前鼠标对应的蜡烛的值坐标
   if (this.drawMouseOverlay) {
@@ -127,6 +217,79 @@ CandlestickChart.prototype.mouseMove = function (e) {
 CandlestickChart.prototype.mouseOut = function (e) {
   this.drawMouseOverlay = false
   this.draw()
+}
+
+CandlestickChart.prototype.drawCurveLine = function () {
+  function getControlPoints(pt0, pt1, pt2, t) {
+    const x0 = pt0[0]
+    const y0 = pt0[1]
+    const x1 = pt1[0]
+    const y1 = pt1[1]
+    const x2 = pt2[0]
+    const y2 = pt2[1]
+
+    const d01 = Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2))
+    const d12 = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+
+    const fa = (t * d01) / (d01 + d12)
+    const fb = t - fa
+
+    const p1x = x1 + fa * (x0 - x2)
+    const p1y = y1 + fa * (y0 - y2)
+
+    const p2x = x1 - fb * (x0 - x2)
+    const p2y = y1 - fb * (y0 - y2)
+
+    return [
+      [p1x, p1y],
+      [p2x, p2y],
+    ]
+  }
+
+  let cps = []
+  let pts = []
+  for (let i = 0; i < this.candlesticks.length; i++) {
+    pts.push([
+      this.xValueToPixelCoord(this.candlesticks[i].timestamp),
+      this.yValueToPixelCoord(this.candlesticks[i].close),
+    ])
+  }
+  for (let i = 1; i < this.candlesticks.length - 1; i++) {
+    cps.push(...getControlPoints(pts[i - 1], pts[i], pts[i + 1], 0.5))
+  }
+  // 连接第一个和最后一个曲线
+  this.context.strokeStyle = "white"
+  this.context.lineWidth = 2
+  this.context.beginPath()
+  this.context.moveTo(pts[0][0], pts[0][1])
+  this.context.quadraticCurveTo(cps[0][0], cps[0][1], pts[1][0], pts[1][1])
+  this.context.stroke()
+  this.context.closePath()
+  this.context.beginPath()
+  this.context.moveTo(pts[pts.length - 2][0], pts[pts.length - 2][1])
+  this.context.quadraticCurveTo(
+    cps[cps.length - 1][0],
+    cps[cps.length - 1][1],
+    pts[pts.length - 1][0],
+    pts[pts.length - 1][1]
+  )
+  this.context.stroke()
+  this.context.closePath()
+  for (let i = 1; i < this.candlesticks.length - 2; i++) {
+    this.context.beginPath()
+    this.context.moveTo(pts[i][0], pts[i][1])
+    this.context.bezierCurveTo(
+      cps[i * 2 - 1][0],
+      cps[i * 2 - 1][1],
+      cps[i * 2][0],
+      cps[i * 2][1],
+      pts[i + 1][0],
+      pts[i + 1][1]
+    )
+    this.context.stroke()
+    this.context.closePath()
+  }
+  this.context.lineWidth = 1
 }
 
 CandlestickChart.prototype.draw = function () {
@@ -174,6 +337,9 @@ CandlestickChart.prototype.draw = function () {
       color
     )
   }
+
+  // 画曲线
+  this.drawCurveLine()
 
   // 如果鼠标在某个蜡烛上，需要画出辅助线
   if (this.drawMouseOverlay) {
@@ -276,63 +442,27 @@ CandlestickChart.prototype.draw = function () {
 }
 
 CandlestickChart.prototype.drawGrid = function () {
-  let yGridSize = this.yValueRange / this.yGridCells
-
-  let niceNumber = Math.pow(10, Math.ceil(Math.log10(yGridSize)))
-  if (yGridSize < 0.25 * niceNumber) {
-    niceNumber = 0.25 * niceNumber
-  } else if (yGridSize < 0.5 * niceNumber) {
-    niceNumber = 0.5 * niceNumber
-  }
-
-  const yStartRoundNumber =
-    Math.ceil(this.yValueStart / niceNumber) * niceNumber
-
-  const yEndRoundNumber = Math.floor(this.yValueEnd / niceNumber) * niceNumber
-
-  for (let y = yStartRoundNumber; y <= yEndRoundNumber; y += niceNumber) {
-    this.drawLine(
-      0,
-      this.yValueToPixelCoord(y),
-      this.width,
-      this.yValueToPixelCoord(y),
-      this.gridColor
-    )
-    const textWidth = this.context.measureText(this.roundPriceValue(y)).width
+  const yinterval = (this.height - this.marginTop - this.marginBottom) / 6
+  for (let i = 0; i <= 6; i++) {
+    const yPiexl = yinterval * i + this.marginTop
+    const yValue = this.yPixelToValueCoord(yPiexl)
+    this.drawLine(0, yPiexl, this.width, yPiexl, this.gridColor)
+    const textWidth = this.context.measureText(
+      this.roundPriceValue(yValue)
+    ).width
     this.context.fillStyle = this.gridTextColor
     this.context.fillText(
-      this.roundPriceValue(y),
+      this.roundPriceValue(yValue),
       this.width - textWidth - 5,
-      this.yValueToPixelCoord(y) - 5
+      this.yValueToPixelCoord(yValue) - 5
     )
   }
-
-  var xGridSize = this.xValueRange / this.xGridCells
-
-  niceNumber = Math.pow(10, Math.ceil(Math.log10(xGridSize)))
-  if (xGridSize < 0.25 * niceNumber) {
-    niceNumber = 0.25 * niceNumber
-  } else if (xGridSize < 0.5 * niceNumber) {
-    niceNumber = 0.5 * niceNumber
-  }
-
-  const xStartRoundNumber =
-    Math.ceil(this.xValueStart / niceNumber) * niceNumber
-  // find next lowest nice number below yEnd
-  const xEndRoundNumber = Math.floor(this.xValueEnd / niceNumber) * niceNumber
-
-  // var formatAsDate = false
-  // if (this.xValueRange > 60 * 60 * 24 * 1000 * 5) formatAsDate = true
-
-  for (let x = xStartRoundNumber; x <= xEndRoundNumber; x += niceNumber) {
-    this.drawLine(
-      this.xValueToPixelCoord(x),
-      0,
-      this.xValueToPixelCoord(x),
-      this.height,
-      this.gridColor
-    )
-    const date = new Date(x)
+  const xValueInterval = this.candlesticks.length / 10
+  for (let i = 4; i <= this.candlesticks.length; i += xValueInterval) {
+    const xValue = this.candlesticks[i].timestamp
+    const xPiexl = this.xValueToPixelCoord(xValue)
+    this.drawLine(xPiexl, 0, xPiexl, this.height, this.gridColor)
+    const date = new Date(xValue)
     let dateStr = ""
     // if (formatAsDate) {
     let day = date.getDate()
@@ -346,11 +476,7 @@ CandlestickChart.prototype.drawGrid = function () {
     //   dateStr = date.getHours() + ":" + minutes
     // }
     this.context.fillStyle = this.gridTextColor
-    this.context.fillText(
-      dateStr,
-      this.xValueToPixelCoord(x) + 5,
-      this.height - 5
-    )
+    this.context.fillText(dateStr, xPiexl + 5, this.height - 5)
   }
 }
 
@@ -457,3 +583,44 @@ CandlestickChart.prototype.roundPriceValue = function (value) {
   if (value > 0.0000001) return Math.round(value * 10000000) / 10000000
   else return Math.round(value * 1000000000) / 1000000000
 }
+
+async function getData(endTime) {
+  return new Promise((resolve, reject) => {
+    var xmlhttp = new XMLHttpRequest()
+    xmlhttp.open(
+      "GET",
+      `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=100${
+        endTime ? "&endTime=" + endTime : ""
+      }`
+    )
+    xmlhttp.onreadystatechange = function () {
+      if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+        var json = JSON.parse(xmlhttp.responseText)
+        const candles = []
+        for (var i = 0; i < json.length; ++i) {
+          candles.push(
+            new Candlestick(
+              json[i][0],
+              json[i][1],
+              json[i][4],
+              json[i][2],
+              json[i][3]
+            )
+          )
+        }
+        resolve(candles)
+      }
+    }
+    xmlhttp.setRequestHeader(
+      "Content-Type",
+      "application/x-www-form-urlencoded"
+    )
+    xmlhttp.send()
+  })
+}
+getData().then((res) => {
+  const candlestickChart = new CandlestickChart("CandlestickChart")
+  candlestickChart.cachedCandlesticks = res
+  candlestickChart.setCandlesticks()
+  candlestickChart.draw()
+})
