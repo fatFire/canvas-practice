@@ -29,16 +29,16 @@ function CandlestickChart(canvasElementID) {
     }
   })
 
-  this.canvas.style.backgroundColor = "#252525"
+  this.canvas.style.backgroundColor = "#070d2e"
   this.context.font = "12px sans-serif"
   this.gridColor = "#444444"
   this.gridTextColor = "#aaaaaa"
   this.mouseHoverBackgroundColor = "#eeeeee"
   this.mouseHoverTextColor = "#000000"
-  this.greenColor = "#00cc00"
-  this.redColor = "#cc0000"
-  this.greenHoverColor = "#00ff00"
-  this.redHoverColor = "#ff0000"
+  this.greenColor = "#50ea8e"
+  this.redColor = "#fc5434"
+  this.greenHoverColor = "#01c454"
+  this.redHoverColor = "#fd2906"
 
   this.context.lineWidth = 1
   this.candleWidth = 5
@@ -259,7 +259,7 @@ CandlestickChart.prototype.drawCurveLine = function () {
   }
   // 连接第一个和最后一个曲线
   this.context.strokeStyle = "white"
-  this.context.lineWidth = 2
+  this.context.lineWidth = 3
   this.context.beginPath()
   this.context.moveTo(pts[0][0], pts[0][1])
   this.context.quadraticCurveTo(cps[0][0], cps[0][1], pts[1][0], pts[1][1])
@@ -356,9 +356,9 @@ CandlestickChart.prototype.draw = function () {
     let str = this.roundPriceValue(this.yMouseHover)
     let textWidth = this.context.measureText(str).width
     this.fillRect(
-      this.width - 70,
+      this.width - 65,
       this.mousePosition.y - 10,
-      70,
+      65,
       20,
       this.mouseHoverBackgroundColor
     )
@@ -399,23 +399,20 @@ CandlestickChart.prototype.draw = function () {
     let yPos = this.mousePosition.y - 95
     if (yPos < 0) yPos = this.mousePosition.y + 15
 
-    this.fillRect(
-      this.mousePosition.x + 15,
-      yPos,
-      120,
-      80,
-      this.mouseHoverBackgroundColor
-    )
+
     const color =
       this.candlesticks[this.hoveredCandlestickID].close >
       this.candlesticks[this.hoveredCandlestickID].open
         ? this.redHoverColor
         : this.greenHoverColor
-
-    this.fillRect(this.mousePosition.x + 15, yPos, 10, 80, color)
-    this.context.lineWidth = 2
-    this.drawRect(this.mousePosition.x + 15, yPos, 120, 80, color)
-    this.context.lineWidth = 1
+    this.fillRect(this.mousePosition.x + 15, yPos-5, 120, 90, color)
+    this.fillRect(
+      this.mousePosition.x + 20,
+      yPos,
+      110,
+      80,
+      this.mouseHoverBackgroundColor
+    )
 
     this.context.fillStyle = this.mouseHoverTextColor
     this.context.fillText(
@@ -519,17 +516,26 @@ CandlestickChart.prototype.drawLine = function (
 }
 
 CandlestickChart.prototype.fillRect = function (x, y, width, height, color) {
-  this.context.beginPath()
   this.context.fillStyle = color
-  this.context.rect(x, y, width, height)
+  this.roundRect(x, y, width, height, 5)
   this.context.fill()
 }
 
 CandlestickChart.prototype.drawRect = function (x, y, width, height, color) {
-  this.context.beginPath()
   this.context.strokeStyle = color
-  this.context.rect(x, y, width, height)
+  this.roundRect(x, y, width, height, 5)
   this.context.stroke()
+}
+
+CandlestickChart.prototype.roundRect = function (x, y, width, height, r) {
+  if (Math.abs(height) < 2 * r) {r = Math.abs(height) / 2}
+  this.context.beginPath();
+  this.context.moveTo(x+r, y);
+  this.context.arcTo(x+width, y, x+width, y+height, r);
+  this.context.arcTo(x+width, y+height, x, y+height, r);
+  this.context.arcTo(x, y+height, x, y, r);
+  this.context.arcTo(x, y, x+width, y, r);
+  this.context.closePath();
 }
 
 CandlestickChart.prototype.yValueToPixelCoord = function (yValue) {
