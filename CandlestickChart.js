@@ -9,7 +9,7 @@ function Candlestick(timestamp, open, close, high, low) {
 function CandlestickChart(canvasElementID) {
   this.canvas = document.getElementById(canvasElementID)
   this.context = this.canvas.getContext("2d")
-  this.adjustHidpi(this.canvas, this.context)
+  // this.adjustHidpi(this.canvas, this.context)
 
   this.width = parseInt(this.canvas.width)
   this.height = parseInt(this.canvas.height)
@@ -91,6 +91,7 @@ CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
 
   canvas.style.width = rect.width + "px"
   canvas.style.height = rect.height + "px"
+  
 
   context.scale(dpr, dpr)
 }
