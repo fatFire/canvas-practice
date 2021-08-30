@@ -9,7 +9,7 @@ function Candlestick(timestamp, open, close, high, low) {
 function CandlestickChart(canvasElementID) {
   this.canvas = document.getElementById(canvasElementID)
   this.context = this.canvas.getContext("2d")
-  // this.adjustHidpi(this.canvas, this.context)
+  this.adjustHidpi(this.canvas, this.context)
 
   this.width = parseInt(this.canvas.width)
   this.height = parseInt(this.canvas.height)
@@ -91,6 +91,8 @@ CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
 
   canvas.style.width = rect.width + "px"
   canvas.style.height = rect.height + "px"
+  console.log(canvas.style.width, rect.width, canvas.width)
+  console.log(canvas, context);
   
 
   context.scale(dpr, dpr)
@@ -256,7 +258,7 @@ CandlestickChart.prototype.drawCurveLine = function () {
     ])
   }
   for (let i = 1; i < this.candlesticks.length - 1; i++) {
-    cps.push(...getControlPoints(pts[i - 1], pts[i], pts[i + 1], 0.5))
+    cps.push(...getControlPoints(pts[i - 1], pts[i], pts[i + 1], 0.8))
   }
   // 连接第一个和最后一个曲线
   this.context.strokeStyle = "white"
