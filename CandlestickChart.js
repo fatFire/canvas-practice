@@ -101,8 +101,6 @@ CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
 
   canvas.style.width = rect.width + "px"
   canvas.style.height = rect.height + "px"
-  console.log(canvas.style.width, rect.width, canvas.width)
-  console.log(canvas, context)
   console.log(dpr, bsr)
   context.scale(ratio, ratio)
 }
