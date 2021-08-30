@@ -13,8 +13,6 @@ function CandlestickChart(canvasElementID) {
   this.height = parseInt(this.canvas.height)
   this.adjustHidpi(this.canvas, this.context)
 
-  
-
   this.canvas.addEventListener("mousemove", (e) => {
     this.mouseMove(e)
   })
@@ -85,17 +83,28 @@ function CandlestickChart(canvasElementID) {
 
 CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
   const dpr = window.devicePixelRatio || 1
+
+  const bsr =
+    context["webkitBackingStorePixelRatio"] ||
+    context["mozBackingStorePixelRatio"] ||
+    context["msBackingStorePixelRatio"] ||
+    context["oBackingStorePixelRatio"] ||
+    context["backingStorePixelRatio"] ||
+    1
+
+  const ratio = dpr / bsr
+
   const rect = canvas.getBoundingClientRect()
 
-  canvas.width = rect.width * dpr
-  canvas.height = rect.height * dpr
+  canvas.width = rect.width * ratio
+  canvas.height = rect.height * ratio
 
   canvas.style.width = rect.width + "px"
   canvas.style.height = rect.height + "px"
   console.log(canvas.style.width, rect.width, canvas.width)
   console.log(canvas, context)
-  console.log(dpr)
-  context.scale(dpr, dpr)
+  console.log(dpr, bsr)
+  context.scale(ratio, ratio)
 }
 
 CandlestickChart.prototype.addCandlestick = function (candlestick) {
@@ -543,7 +552,6 @@ CandlestickChart.prototype.animation = function () {
   let i = 0
   let last = 0
   function drawCandle(now) {
-    
     if (!last || now - last >= 0) {
       last = now
       const candlestick = this.candlesticks[i++]
