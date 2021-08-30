@@ -9,10 +9,11 @@ function Candlestick(timestamp, open, close, high, low) {
 function CandlestickChart(canvasElementID) {
   this.canvas = document.getElementById(canvasElementID)
   this.context = this.canvas.getContext("2d")
-  this.adjustHidpi(this.canvas, this.context)
-
   this.width = parseInt(this.canvas.width)
   this.height = parseInt(this.canvas.height)
+  this.adjustHidpi(this.canvas, this.context)
+
+  
 
   this.canvas.addEventListener("mousemove", (e) => {
     this.mouseMove(e)
