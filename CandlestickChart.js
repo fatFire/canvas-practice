@@ -91,17 +91,19 @@ CandlestickChart.prototype.adjustHidpi = function (canvas, context) {
     context["oBackingStorePixelRatio"] ||
     context["backingStorePixelRatio"] ||
     1
-
+  
+  // 获取画布缩放的比例
   const ratio = dpr / bsr
 
-  const rect = canvas.getBoundingClientRect()
+  // 通过css宽高让画布回到原始大小
+  canvas.style.width = canvas.width + "px"
+  canvas.style.height = canvas.height + "px"
 
-  canvas.width = rect.width * ratio
-  canvas.height = rect.height * ratio
+  // 缩放画布
+  canvas.width = canvas.width * ratio
+  canvas.height = canvas.height * ratio
 
-  canvas.style.width = rect.width + "px"
-  canvas.style.height = rect.height + "px"
-  console.log(dpr, bsr)
+  // 缩放绘制到画布上的元素的大小。比如100px * 100px 的矩形绘制到画布上是200px * 200px
   context.scale(ratio, ratio)
 }
 
